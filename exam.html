@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>Ujian Berlangsung</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#06e8f9",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2123",
+                        "surface-dark": "#162a2c",
+                        "surface-active": "#1f3638",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Prevent zoom on iOS and stabilize viewport */
+        html {
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Container wrapper for zoom-safe layout */
+        .exam-container-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            height: 100vh;
+            /* Fallback */
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f2123;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #27383a;
+            border-radius: 3px;
+        }
+
+        /* Iframe styling - responsive */
+        .exam-frame {
+            width: 100%;
+            border: none;
+            display: block;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .mobile-compact-header {
+                padding: 0.5rem 0.75rem;
+            }
+
+            .mobile-hide {
+                display: none !important;
+            }
+
+            .mobile-small-text {
+                font-size: 0.7rem;
+            }
+
+            .mobile-timer {
+                font-size: 1rem;
+            }
+        }
+    </style>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-client.js"></script>
+
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased overflow-hidden selection:bg-primary/30">
+
+    <!-- Overlay for Warnings/Penalties -->
+    <div id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(50, 0, 0, 0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem;">
+        <span class="material-symbols-outlined text-red-500 text-5xl sm:text-6xl mb-4">lock</span>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">LAYAR DIKUNCI</h1>
+        <p class="text-slate-300 text-sm sm:text-base">Anda terdeteksi meninggalkan layar ujian.</p>
+    </div>
+
+    <div class="exam-container-wrapper bg-background-dark">
+        <!-- MOBILE-FRIENDLY HEADER -->
+        <header
+            class="mobile-compact-header shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-background-dark border-b border-[#27383a] z-50 shadow-md">
+
+            <!-- Left: Student Info (Compact on mobile) -->
+            <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <div
+                    class="size-8 sm:size-10 rounded-full bg-cover bg-center border border-[#27383a] shrink-0 bg-primary/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-lg sm:text-xl">person</span>
+                </div>
+                <div class="flex flex-col truncate min-w-0">
+                    <span id="student-name-display"
+                        class="text-xs sm:text-sm font-semibold text-white leading-tight truncate">Memuat...</span>
+                    <span id="student-details-display"
+                        class="text-[10px] sm:text-xs text-slate-400 font-medium leading-tight mobile-small-text">...</span>
+                </div>
+            </div>
+
+            <!-- Center: Live Indicator (Hidden on mobile) -->
+            <div class="mobile-hide flex flex-col items-center justify-center">
+                <div
+                    class="flex items-center gap-2 bg-[#1f3638] px-3 py-1 rounded-full border border-primary/10 shadow-[0_0_10px_rgba(6,232,249,0.05)]">
+                    <div class="relative flex h-2 w-2">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </div>
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-emerald-400">Langsung</span>
+                </div>
+            </div>
+
+            <!-- Right: Timer + Finish Button -->
+            <div class="flex items-center justify-end gap-2 sm:gap-3 flex-shrink-0">
+                <div class="flex items-center gap-1 sm:gap-2">
+                    <span class="material-symbols-outlined text-primary text-base sm:text-[20px]">timer</span>
+                    <p id="exam-timer"
+                        class="mobile-timer text-primary text-base sm:text-lg font-bold font-mono tracking-tight leading-none tabular-nums">
+                        00:00</p>
+                </div>
+                <button onclick="finishEarly()"
+                    class="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-lg transition-colors shadow-lg">
+                    <span class="material-symbols-outlined text-base">check_circle</span>
+                    <span>Selesai</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT - Full height on mobile -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-background-dark">
+            <div id="exam-container" class="w-full flex-1 flex flex-col min-h-0">
+                <!-- Iframe will be injected here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-[9998] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-4">
+            <div class="bg-[#162a2c] border border-[#27383a] rounded-2xl shadow-2xl p-6 text-center">
+                <div
+                    class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-emerald-400 text-3xl">help</span>
+                </div>
+                <h3 id="confirm-title" class="text-xl font-bold text-white mb-2">Konfirmasi</h3>
+                <p id="confirm-message" class="text-slate-400 text-sm mb-6">Apakah Anda yakin?</p>
+                <div class="flex gap-3">
+                    <button onclick="closeConfirmModal()"
+                        class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-colors">
+                        Batal
+                    </button>
+                    <button id="confirm-yes-btn" onclick="confirmAction()"
+                        class="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        Ya, Selesai
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let confirmCallback = null;
+        let isFinishing = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Verify Session
+            const sessionraw = sessionStorage.getItem('exam_session');
+            if (!sessionraw) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const session = JSON.parse(sessionraw);
+
+            // Update UI with Student Info
+            document.getElementById('student-name-display').textContent = session.studentName;
+            document.getElementById('student-details-display').textContent = `${session.studentClass} • ${session.studentAbsen}`;
+
+            // 2. SET PROCTOR CONTEXT FIRST
+            window.ProctorContext = {
+                studentName: session.studentName,
+                studentClass: session.studentClass,
+                studentAbsen: session.studentAbsen,
+                examCode: session.examCode
+            };
+
+            // 3. Initialize Proctor
+            if (window.Proctor) {
+                window.Proctor.init();
+            }
+
+            // 4. Inject Form with loading indicator
+            const container = document.getElementById('exam-container');
+            container.innerHTML = `
+                <div id="iframe-loading" class="flex-1 flex items-center justify-center">
+                    <div class="text-center">
+                        <svg class="animate-spin h-10 w-10 mx-auto mb-4 text-primary" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-slate-400 text-sm">Memuat formulir ujian...</p>
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const iframe = document.createElement('iframe');
+                iframe.src = session.examUrl;
+                iframe.className = 'exam-frame';
+                iframe.setAttribute('allow', 'camera; microphone');
+                iframe.setAttribute('frameborder', '0');
+                iframe.style.flex = '1';
+                iframe.style.minHeight = '0';
+
+                iframe.onload = () => {
+                    const loading = document.getElementById('iframe-loading');
+                    if (loading) loading.remove();
+                };
+
+                container.appendChild(iframe);
+            }, 300);
+
+            // 5. Initialize Timer
+            initTimer(session.examDuration);
+        });
+
+        function initTimer(durationMinutes) {
+            let endTime = localStorage.getItem('exam_end_time');
+
+            if (!endTime) {
+                const now = new Date().getTime();
+                endTime = now + (durationMinutes * 60 * 1000);
+                localStorage.setItem('exam_end_time', endTime);
+            }
+
+            const timerElement = document.getElementById('exam-timer');
+
+            const interval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+
+                if (distance < 0) {
+                    clearInterval(interval);
+                    timerElement.textContent = "00:00";
+                    timerElement.classList.add('text-red-500', 'animate-pulse');
+                    finishExam();
+                    return;
+                }
+
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                if (hours > 0) {
+                    timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                if (distance < 5 * 60 * 1000) {
+                    timerElement.classList.remove('text-primary');
+                    timerElement.classList.add('text-orange-500');
+                }
+            }, 1000);
+        }
+
+        function finishExam() {
+            const timerElement = document.getElementById('exam-timer');
+            timerElement.textContent = "WAKTU HABIS";
+            timerElement.classList.remove('text-orange-500');
+            timerElement.classList.add('text-red-600', 'animate-pulse');
+
+            const existingFooter = document.querySelector('.fixed.bottom-0');
+            if (existingFooter) existingFooter.remove();
+
+            const bottomBar = document.createElement('div');
+            bottomBar.className = "fixed bottom-0 left-0 w-full bg-red-900/95 backdrop-blur-md border-t border-red-500 p-4 z-50 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_-5px_20px_rgba(220,38,38,0.5)]";
+
+            bottomBar.innerHTML = `
+                <div class="flex items-center gap-4 text-white">
+                    <div class="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center animate-bounce">
+                        <span class="material-symbols-outlined text-2xl">alarm_off</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg leading-none">WAKTU HABIS!</h3>
+                        <p class="text-xs text-red-200 mt-1">Klik <strong class="text-white">SUBMIT</strong> pada formulir, lalu klik Selesai.</p>
+                    </div>
+                </div>
+                <button id="time-up-finish-btn" onclick="doFinish()" class="w-full sm:w-auto px-8 py-3 bg-white text-red-900 font-bold rounded-xl hover:bg-red-50 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">logout</span>
+                    Saya Sudah Submit
+                </button>
+            `;
+
+            document.body.appendChild(bottomBar);
+        }
+
+        // Custom confirm modal functions
+        function showConfirmModal(title, message, callback) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        function confirmAction() {
+            closeConfirmModal();
+            if (confirmCallback) {
+                confirmCallback();
+            }
+        }
+
+        // Early finish - allows students to exit safely
+        function finishEarly() {
+            if (isFinishing) return;
+
+            showConfirmModal(
+                'Selesaikan Ujian?',
+                'Pastikan Anda sudah menekan tombol SUBMIT pada formulir ujian sebelum keluar.',
+                doFinish
+            );
+        }
+
+        // Actual finish logic (non-blocking)
+        async function doFinish() {
+            if (isFinishing) return;
+            isFinishing = true;
+
+            // Update button to show loading
+            const finishBtn = document.querySelector('button[onclick="finishEarly()"]');
+            const timeUpBtn = document.getElementById('time-up-finish-btn');
+
+            const showLoading = (btn) => {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = `
+                        <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Menyimpan...
+                    `;
+                }
+            };
+
+            showLoading(finishBtn);
+            showLoading(timeUpBtn);
+
+            // Disable proctoring to prevent false violation
+            if (window.Proctor) {
+                window.Proctor.initialized = false;
+            }
+
+            // Update session status in database (fire-and-forget)
+            try {
+                const sessionRaw = sessionStorage.getItem('exam_session');
+                if (sessionRaw) {
+                    const session = JSON.parse(sessionRaw);
+                    if (session.sessionId) {
+                        // Don't await - fire and forget
+                        supabase
+                            .from('exam_sessions')
+                            .update({ is_active: false, finished_at: new Date().toISOString() })
+                            .eq('id', session.sessionId)
+                            .then(() => console.log('Session updated'))
+                            .catch(e => console.warn('Session update failed:', e));
+                    }
+                }
+            } catch (e) {
+                console.warn('Error updating session:', e);
+            }
+
+            // Clear session immediately
+            localStorage.removeItem('exam_end_time');
+            sessionStorage.removeItem('exam_session');
+
+            // Redirect immediately - don't wait for DB
+            window.location.href = 'index.html';
+        }
+
+        // Also handle if user tries to close/reload
+        window.addEventListener('beforeunload', (e) => {
+            if (!isFinishing) {
+                e.preventDefault();
+                e.returnValue = 'Anda yakin ingin meninggalkan ujian?';
+            }
+        });
+    </script>
+
+    <!-- Proctoring Script (loaded AFTER the inline script sets context) -->
+    <script src="assets/js/proctor.js"></script>
+
+</body>
+
+</html>

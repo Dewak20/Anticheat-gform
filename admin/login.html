@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Admin Command Center | Login</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f59e0b", // Amber for Admin
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f1214",
+                        "card-bg": "#181b1e",
+                        "input-bg": "#212529",
+                        "border-color": "#343a40",
+                        "muted-text": "#adb5bd",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]
+                    },
+                },
+            },
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .grid-pattern {
+            background-color: #0f1214;
+            background-image: linear-gradient(#1f2937 1px, transparent 1px), linear-gradient(90deg, #1f2937 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-client.js"></script>
+</head>
+
+<body
+    class="bg-background-dark min-h-screen flex items-center justify-center p-4 grid-pattern text-white selection:bg-primary/30">
+
+    <div
+        class="relative w-full max-w-md bg-card-bg/95 backdrop-blur-xl border border-border-color shadow-2xl rounded-2xl overflow-hidden p-8 flex flex-col gap-6">
+
+        <div class="flex flex-col items-center text-center">
+            <div
+                class="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 border border-primary/30">
+                <span class="material-symbols-outlined text-primary text-4xl">admin_panel_settings</span>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight">Command Center</h1>
+            <p class="text-muted-text text-sm mt-1">Authorized Personnel Only</p>
+        </div>
+
+        <form id="admin-login-form" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold uppercase tracking-wider text-muted-text ml-1">Email Access</label>
+                <div class="relative">
+                    <input id="email" type="email"
+                        class="w-full bg-input-bg border border-border-color rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors pl-10"
+                        placeholder="admin@school.id" required>
+                    <span
+                        class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">mail</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold uppercase tracking-wider text-muted-text ml-1">Secure Key</label>
+                <div class="relative">
+                    <input id="password" type="password"
+                        class="w-full bg-input-bg border border-border-color rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors pl-10"
+                        placeholder="••••••••" required>
+                    <span
+                        class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">lock</span>
+                </div>
+            </div>
+
+            <p id="error-msg" class="text-red-500 text-sm font-medium text-center hidden bg-red-500/10 p-2 rounded"></p>
+
+            <button type="submit"
+                class="mt-2 w-full bg-primary hover:bg-amber-400 text-black font-bold py-3.5 rounded-lg transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                Authenticate
+            </button>
+        </form>
+
+        <div class="text-center pt-4 border-t border-border-color">
+            <p class="text-xs text-gray-600 font-mono">System v2.1 • Secure Connection</p>
+        </div>
+    </div>
+
+    <script>
+        // Check if already logged in
+        async function checkExistingSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'dashboard.html';
+            }
+        }
+        checkExistingSession();
+
+        const form = document.getElementById('admin-login-form');
+        const errorMsg = document.getElementById('error-msg');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Simple handling to clear error before trying
+            errorMsg.classList.add('hidden');
+
+            const button = e.target.querySelector('button');
+            const originalText = button.textContent;
+            button.textContent = "Verifying...";
+            button.disabled = true;
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                errorMsg.textContent = "Access Denied: " + error.message;
+                errorMsg.classList.remove('hidden');
+                button.textContent = originalText;
+                button.disabled = false;
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

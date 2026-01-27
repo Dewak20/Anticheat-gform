@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>Portal Ujian Aman</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#06e8f9",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2123",
+                        "card-bg": "#151f20",
+                        "input-bg": "#1b2727",
+                        "border-color": "#3a5355",
+                        "muted-text": "#9bb9bb",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100dvh;
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+        }
+
+        .security-pattern {
+            background-color: #0f2123;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(6, 232, 249, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 232, 249, 0.05) 0px, transparent 50%),
+                repeating-linear-gradient(45deg, rgba(58, 83, 85, 0.03) 0px, rgba(58, 83, 85, 0.03) 1px, transparent 1px, transparent 10px);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1b2727 inset !important;
+            -webkit-text-fill-color: white !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .mobile-compact-padding {
+                padding: 1rem !important;
+            }
+
+            .mobile-small-icon {
+                font-size: 1.5rem !important;
+            }
+        }
+
+        /* Button ripple effect */
+        .btn-ripple {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-ripple::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .btn-ripple:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-pressed {
+            transform: scale(0.95) !important;
+            opacity: 0.8 !important;
+        }
+    </style>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-client.js"></script>
+
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-center p-4 security-pattern relative overflow-y-auto font-display text-white selection:bg-primary/30">
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none z-0"
+        data-alt="Soft cyan glow effect in background"></div>
+    <div
+        class="relative z-10 w-full max-w-sm sm:max-w-md bg-card-bg/95 backdrop-blur-xl border border-border-color shadow-2xl shadow-black/50 rounded-2xl overflow-hidden animate-fade-in-up">
+        <div class="h-1 w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+        <div class="p-6 sm:p-8 flex flex-col gap-6">
+            <div class="text-center">
+                <div
+                    class="inline-flex items-center justify-center p-3 mb-4 rounded-full bg-primary/10 border border-primary/20">
+                    <span class="material-symbols-outlined text-primary text-3xl">shield_lock</span>
+                </div>
+                <h1 class="text-white tracking-tight text-2xl sm:text-3xl font-bold leading-tight">Portal Ujian Aman
+                </h1>
+                <p class="text-muted-text text-sm sm:text-base font-normal leading-relaxed mt-2">
+                    Masukkan data Anda untuk mengakses ujian.
+                </p>
+            </div>
+
+            <form id="login-form" class="flex flex-col gap-5">
+                <div class="flex flex-col gap-2">
+                    <label class="text-white text-sm font-medium ml-1">Nama Lengkap</label>
+                    <div class="relative group">
+                        <input id="student_name"
+                            class="form-input flex w-full rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-color bg-input-bg focus:border-primary h-14 placeholder:text-gray-500 px-4 pl-12 text-base font-normal transition-all duration-200"
+                            placeholder="Nama Lengkap" type="text" required autocomplete="off" />
+                        <span
+                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-text group-focus-within:text-primary transition-colors duration-200">person</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-white text-sm font-medium ml-1">Absen</label>
+                        <div class="relative group">
+                            <input id="student_absen"
+                                class="form-input flex w-full rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-color bg-input-bg focus:border-primary h-14 placeholder:text-gray-500 px-4 pl-12 text-base font-normal transition-all duration-200"
+                                placeholder="00" type="text" required autocomplete="off" />
+                            <span
+                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-text group-focus-within:text-primary transition-colors duration-200">numbers</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-white text-sm font-medium ml-1">Kelas</label>
+                        <div class="relative group">
+                            <select id="student_class"
+                                class="form-select flex w-full rounded-xl text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-color bg-input-bg focus:border-primary h-14 placeholder:text-gray-500 px-4 pl-12 text-base font-normal transition-all duration-200"
+                                required>
+                                <option value="" disabled selected>Pilih Kelas</option>
+                                <option value="9A">9A</option>
+                                <option value="9B">9B</option>
+                                <option value="9C">9C</option>
+                                <option value="9D">9D</option>
+                                <option value="9E">9E</option>
+                                <option value="9F">9F</option>
+                                <option value="9G">9G</option>
+                            </select>
+                            <span
+                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-text group-focus-within:text-primary transition-colors duration-200">school</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-white text-sm font-medium ml-1 flex justify-between">
+                        Kode Akses Ujian
+                        <span class="text-xs text-primary/80 font-normal cursor-pointer hover:text-primary"
+                            onclick="navigator.clipboard.readText().then(text => document.getElementById('exam_code').value = text)">Tempel
+                            Kode</span>
+                    </label>
+                    <div class="relative group">
+                        <input id="exam_code"
+                            class="form-input flex w-full rounded-xl text-white font-mono tracking-wider focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-color bg-input-bg focus:border-primary h-14 placeholder:text-gray-500 px-4 pl-12 text-base transition-all duration-200 uppercase"
+                            placeholder="XC-8892-L" type="text" required autocomplete="off" />
+                        <span
+                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-text group-focus-within:text-primary transition-colors duration-200">vpn_key</span>
+                        <div
+                            class="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(6,232,249,0.8)]">
+                        </div>
+                    </div>
+                </div>
+
+                <p id="error-msg" class="text-red-500 text-sm font-medium text-center hidden animate-pulse"></p>
+
+                <button type="submit" id="submit-btn"
+                    class="btn-ripple mt-2 w-full cursor-pointer flex items-center justify-center rounded-xl h-14 px-6 bg-primary hover:bg-[#05d5e6] active:scale-95 active:brightness-90 transition-all duration-100 text-background-dark text-base font-bold tracking-wide shadow-[0_0_20px_rgba(6,232,249,0.25)] hover:shadow-[0_0_30px_rgba(6,232,249,0.4)]">
+                    Mulai Ujian
+                    <span class="material-symbols-outlined ml-2 text-xl font-bold">arrow_forward</span>
+                </button>
+            </form>
+            <div class="pt-4 border-t border-border-color">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="flex flex-col items-center gap-2 text-center group cursor-help">
+                        <div
+                            class="w-10 h-10 rounded-full bg-input-bg border border-border-color flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                            <span
+                                class="material-symbols-outlined text-muted-text text-xl group-hover:text-primary transition-colors">videocam</span>
+                        </div>
+                        <span
+                            class="text-[10px] sm:text-xs text-muted-text font-medium leading-tight">Webcam<br />Aktif</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 text-center group cursor-help">
+                        <div
+                            class="w-10 h-10 rounded-full bg-input-bg border border-border-color flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                            <span
+                                class="material-symbols-outlined text-muted-text text-xl group-hover:text-primary transition-colors">web_asset_off</span>
+                        </div>
+                        <span class="text-[10px] sm:text-xs text-muted-text font-medium leading-tight">Dilarang
+                            Pindah<br />Tab</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 text-center group cursor-help">
+                        <div
+                            class="w-10 h-10 rounded-full bg-input-bg border border-border-color flex items-center justify-center group-hover:border-primary/50 transition-colors">
+                            <span
+                                class="material-symbols-outlined text-muted-text text-xl group-hover:text-primary transition-colors">fullscreen</span>
+                        </div>
+                        <span
+                            class="text-[10px] sm:text-xs text-muted-text font-medium leading-tight">Layar<br />Penuh</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-[#11191a] p-3 text-center border-t border-border-color">
+            <div
+                class="flex items-center justify-center gap-2 text-[10px] text-gray-500 font-mono tracking-widest uppercase">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></span>
+                System Status: Aman • v1.0.4
+            </div>
+        </div>
+    </div>
+    <div class="fixed bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent">
+    </div>
+    <div class="fixed top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+
+    <script>
+        const form = document.getElementById('login-form');
+        const errorMsg = document.getElementById('error-msg');
+        const submitBtn = document.getElementById('submit-btn');
+        let isSubmitting = false;
+
+        // IMMEDIATE click feedback for responsiveness
+        submitBtn.addEventListener('mousedown', () => {
+            if (!isSubmitting) submitBtn.classList.add('btn-pressed');
+        });
+        submitBtn.addEventListener('mouseup', () => {
+            submitBtn.classList.remove('btn-pressed');
+        });
+        submitBtn.addEventListener('mouseleave', () => {
+            submitBtn.classList.remove('btn-pressed');
+        });
+        // Touch support for mobile
+        submitBtn.addEventListener('touchstart', () => {
+            if (!isSubmitting) submitBtn.classList.add('btn-pressed');
+        }, { passive: true });
+        submitBtn.addEventListener('touchend', () => {
+            submitBtn.classList.remove('btn-pressed');
+        }, { passive: true });
+
+        // Connection check on page load
+        async function checkConnection() {
+            try {
+                const { error } = await supabase.from('exams').select('id').limit(1);
+                if (error) throw error;
+                console.log('✅ Supabase connected');
+            } catch (e) {
+                console.error('❌ Supabase connection failed:', e);
+                showError('Koneksi ke server gagal. Periksa internet Anda dan refresh halaman.');
+            }
+        }
+
+        // Run connection check after a short delay to not block page load
+        setTimeout(checkConnection, 1000);
+
+        // Set loading state
+        function setLoading(loading) {
+            isSubmitting = loading;
+            submitBtn.disabled = loading;
+
+            if (loading) {
+                submitBtn.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Memuat...
+                `;
+                submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                submitBtn.classList.remove('hover:bg-[#05d5e6]', 'active:scale-95');
+            } else {
+                submitBtn.innerHTML = `
+                    Mulai Ujian
+                    <span class="material-symbols-outlined ml-2 text-xl font-bold">arrow_forward</span>
+                `;
+                submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                submitBtn.classList.add('hover:bg-[#05d5e6]', 'active:scale-95');
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Prevent double submission
+            if (isSubmitting) return;
+
+            // INSTANT VISUAL FEEDBACK - show pressed state immediately
+            submitBtn.classList.add('btn-pressed');
+            setTimeout(() => submitBtn.classList.remove('btn-pressed'), 150);
+
+            const name = document.getElementById('student_name').value.trim();
+            const absen = document.getElementById('student_absen').value.trim();
+            const kelas = document.getElementById('student_class').value.trim();
+            const code = document.getElementById('exam_code').value.trim().toUpperCase();
+
+            if (!name || !absen || !kelas || !code) {
+                showError("Mohon isi semua field.");
+                return;
+            }
+
+            // Hide previous errors and show loading
+            hideError();
+            setLoading(true);
+
+            try {
+                // 1. Check if exam code exists and is active with timeout
+                const examPromise = supabase
+                    .from('exams')
+                    .select('*')
+                    .eq('access_code', code)
+                    .single();
+
+                // Add 10 second timeout
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), 10000)
+                );
+
+                const { data: exam, error } = await Promise.race([examPromise, timeoutPromise]);
+
+                if (error || !exam) {
+                    throw new Error("Kode ujian tidak ditemukan atau sesi sudah berakhir.");
+                }
+
+                // Validate class
+                if (exam.target_class !== 'ALL' && exam.target_class !== kelas) {
+                    throw new Error(`Ujian ini khusus untuk kelas ${exam.target_class}. Anda kelas ${kelas}.`);
+                }
+
+                // Validate session type (Ganjil/Genap)
+                if (exam.session_type !== 'ALL') {
+                    const absenNum = parseInt(absen);
+                    const isOdd = absenNum % 2 !== 0;
+
+                    if (exam.session_type === 'ODD' && !isOdd) {
+                        throw new Error("Ujian ini untuk sesi GANJIL. Anda absen Genap.");
+                    }
+                    if (exam.session_type === 'EVEN' && isOdd) {
+                        throw new Error("Ujian ini untuk sesi GENAP. Anda absen Ganjil.");
+                    }
+                }
+
+                if (!exam.is_active) {
+                    throw new Error("Ujian ini sudah tidak aktif.");
+                }
+
+                // 2. Record exam session to database for monitoring
+                let sessionId = null;
+                try {
+                    console.log('📝 Recording session to exam_sessions table...');
+                    const { data: sessionRecord, error: sessionError } = await supabase
+                        .from('exam_sessions')
+                        .insert({
+                            exam_id: exam.id,
+                            exam_access_code: exam.access_code,
+                            student_name: name,
+                            student_class: kelas,
+                            student_absen: absen,
+                            is_active: true
+                        })
+                        .select('id')
+                        .single();
+
+                    if (sessionError) {
+                        console.error('❌ Session recording error:', sessionError);
+                        // Show error briefly but don't block
+                    } else {
+                        sessionId = sessionRecord?.id || null;
+                        console.log('✅ Session recorded with ID:', sessionId);
+                    }
+                } catch (sessionErr) {
+                    console.error("❌ Session recording exception:", sessionErr);
+                    // Continue - monitoring is secondary
+                }
+
+                // 3. Store session for the Exam Page
+                const sessionData = {
+                    studentName: name,
+                    studentAbsen: absen,
+                    studentClass: kelas,
+                    examId: exam.id,
+                    examCode: exam.access_code,
+                    examUrl: exam.google_form_url,
+                    strictMode: exam.strict_mode,
+                    examDuration: exam.duration || 60,
+                    sessionId: sessionId
+                };
+                sessionStorage.setItem('exam_session', JSON.stringify(sessionData));
+
+                // 4. Redirect
+                window.location.href = 'exam.html';
+
+            } catch (err) {
+                console.error("Login error:", err);
+
+                if (err.message === 'timeout') {
+                    showError("Koneksi timeout. Coba lagi.");
+                } else {
+                    showError(err.message || "Terjadi kesalahan. Coba lagi.");
+                }
+                setLoading(false);
+            }
+        });
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMsg.classList.add('hidden');
+        }
+
+        // Prevent accidental page refresh during form fill
+        window.addEventListener('beforeunload', (e) => {
+            if (isSubmitting) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+
+</html>

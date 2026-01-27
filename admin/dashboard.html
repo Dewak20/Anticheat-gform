@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Dashboard | Pusat Kendali</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f59e0b", // Amber
+                        "background-dark": "#0f1214",
+                        "card-bg": "#181b1e",
+                        "input-bg": "#212529",
+                        "border-color": "#343a40",
+                        "muted-text": "#adb5bd",
+                        "accent-red": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-client.js"></script>
+</head>
+
+<body class="bg-background-dark min-h-screen text-slate-300 font-display">
+
+    <!-- Top Navigation -->
+    <nav class="border-b border-border-color bg-card-bg/50 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/30">
+                        <span class="material-symbols-outlined text-primary text-xl">admin_panel_settings</span>
+                    </div>
+                    <span class="font-bold text-white text-lg tracking-tight">Pusat Kendali</span>
+                </div>
+                <button onclick="logout()"
+                    class="px-4 py-2 text-sm font-medium text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">logout</span>
+                    Keluar
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Status Message -->
+        <div id="status-msg"
+            class="hidden mb-6 p-4 rounded-lg bg-green-900/20 border border-green-500/50 text-green-400 flex items-center gap-3">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span id="status-text">Operasi berhasil.</span>
+        </div>
+
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            <div
+                class="bg-card-bg border border-border-color rounded-xl p-4 sm:p-6 relative overflow-hidden group hover:border-primary/30 transition-colors">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span class="material-symbols-outlined text-5xl sm:text-6xl">assignment</span>
+                </div>
+                <p class="text-xs sm:text-sm font-medium text-muted-text uppercase tracking-wider">Ujian Aktif</p>
+                <h2 id="stat-exams" class="text-2xl sm:text-3xl font-bold text-white mt-1">0</h2>
+            </div>
+            <div
+                class="bg-card-bg border border-border-color rounded-xl p-4 sm:p-6 relative overflow-hidden group hover:border-green-500/30 transition-colors">
+                <div
+                    class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-green-500">
+                    <span class="material-symbols-outlined text-5xl sm:text-6xl">person_check</span>
+                </div>
+                <p class="text-xs sm:text-sm font-medium text-muted-text uppercase tracking-wider">Siswa Online</p>
+                <h2 id="stat-online" class="text-2xl sm:text-3xl font-bold text-green-400 mt-1">0</h2>
+            </div>
+            <div
+                class="bg-card-bg border border-border-color rounded-xl p-4 sm:p-6 relative overflow-hidden group hover:border-red-500/30 transition-colors">
+                <div
+                    class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-red-500">
+                    <span class="material-symbols-outlined text-5xl sm:text-6xl">gavel</span>
+                </div>
+                <p class="text-xs sm:text-sm font-medium text-muted-text uppercase tracking-wider">Total Pelanggaran</p>
+                <h2 id="stat-violations" class="text-2xl sm:text-3xl font-bold text-white mt-1">0</h2>
+            </div>
+            <div
+                class="bg-card-bg border border-border-color rounded-xl p-4 sm:p-6 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
+                <div
+                    class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-blue-500">
+                    <span class="material-symbols-outlined text-5xl sm:text-6xl">groups</span>
+                </div>
+                <p class="text-xs sm:text-sm font-medium text-muted-text uppercase tracking-wider">Siswa Terlacak</p>
+                <h2 id="stat-students" class="text-2xl sm:text-3xl font-bold text-white mt-1">0</h2>
+            </div>
+        </div>
+
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Create Exam Column -->
+            <div class="lg:col-span-1">
+                <div class="bg-card-bg border border-border-color rounded-xl p-6 sticky top-24">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">add_circle</span>
+                        Buat Ujian Baru
+                    </h3>
+
+                    <div
+                        class="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-6 text-xs text-primary/80 leading-relaxed">
+                        Untuk mendapatkan <strong>URL Google Form</strong>: Buka Form &rarr; Kirim &rarr; Embed
+                        (&lt;&gt;)
+                        &rarr; Salin URL dari <code>src</code>.
+                    </div>
+
+                    <form id="create-exam-form" class="flex flex-col gap-4">
+                        <div>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-wider text-muted-text mb-1.5 ml-1">Nama
+                                Ujian</label>
+                            <input type="text" id="exam_name"
+                                class="w-full bg-input-bg border border-border-color rounded-lg px-3 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
+                                placeholder="contoh: UAS Matematika 9A" required>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-wider text-muted-text mb-1.5 ml-1">Kode
+                                Akses</label>
+                            <input type="text" id="access_code"
+                                class="w-full bg-input-bg border border-border-color rounded-lg px-3 py-2.5 text-white uppercase font-mono tracking-wider focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
+                                placeholder="contoh: MTK2024" required>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-wider text-muted-text mb-1.5 ml-1">URL
+                                Sumber Google Form</label>
+                            <input type="url" id="form_url"
+                                class="w-full bg-input-bg border border-border-color rounded-lg px-3 py-2.5 text-white text-sm font-mono focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
+                                placeholder="https://docs.google.com/forms/..." required>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-xs font-semibold uppercase tracking-wider text-muted-text mb-1.5 ml-1">Kelas
+                                    Target</label>
+                                <select id="target_class"
+                                    class="w-full bg-input-bg border border-border-color rounded-lg px-3 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors">
+                                    <option value="ALL">Semua Kelas</option>
+                                    <option value="9A">9A</option>
+                                    <option value="9B">9B</option>
+                                    <option value="9C">9C</option>
+                                    <option value="9D">9D</option>
+                                    <option value="9E">9E</option>
+                                    <option value="9F">9F</option>
+                                    <option value="9G">9G</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-xs font-semibold uppercase tracking-wider text-muted-text mb-1.5 ml-1">Tipe
+                                    Sesi</label>
+                                <select id="session_type"
+                                    class="w-full bg-input-bg border border-border-color rounded-lg px-3 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors">
+                                    <option value="ALL">Semua Sesi</option>
+                                    <option value="ODD">Ganjil</option>
+                                    <option value="EVEN">Genap</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-xs font-semibold uppercase tracking-wider text-muted-text mb-1.5 ml-1">Durasi
+                                (Menit)</label>
+                            <input type="number" id="duration"
+                                class="w-full bg-input-bg border border-border-color rounded-lg px-3 py-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors"
+                                value="60" min="1" required>
+                        </div>
+
+                        <button type="submit"
+                            class="mt-2 w-full bg-white hover:bg-gray-100 text-black font-bold py-3 rounded-lg transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                            Buat Ujian
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Main Content Column -->
+            <div class="lg:col-span-2 flex flex-col gap-8">
+
+                <!-- Tabs Navigation -->
+                <div class="flex items-center gap-6 border-b border-border-color mb-2">
+                    <button onclick="switchTab('monitoring')" id="tab-monitoring"
+                        class="pb-3 border-b-2 border-primary text-white font-bold transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">monitoring</span>
+                        Monitor Siswa
+                    </button>
+                    <button onclick="switchTab('incidents')" id="tab-incidents"
+                        class="pb-3 border-b-2 border-transparent text-muted-text hover:text-white transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">emergency_home</span>
+                        Log Pelanggaran
+                    </button>
+                </div>
+
+                <!-- Live Students Monitoring (Tab Content) -->
+                <div id="content-monitoring"
+                    class="bg-card-bg border border-green-500/30 rounded-xl overflow-hidden animate-fade-in">
+                    <div
+                        class="p-5 sm:p-6 border-b border-border-color flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-green-500/5">
+
+                        <!-- Left: Title & Badge -->
+                        <div class="flex items-center gap-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white leading-tight">Daftar Siswa Online</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    <span id="online-badge" class="text-xs font-medium text-green-400">0 online</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Controls -->
+                        <div
+                            class="flex flex-wrap items-center gap-2 w-full xl:w-auto bg-input-bg/50 p-1.5 rounded-lg border border-border-color/50">
+                            <!-- Filter Checkbox -->
+                            <label
+                                class="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-white/5 cursor-pointer transition-colors border border-transparent hover:border-white/10">
+                                <input type="checkbox" id="active-only-filter" checked onchange="loadStudentSessions()"
+                                    class="w-4 h-4 rounded border-border-color bg-input-bg text-green-500 focus:ring-green-500 focus:ring-offset-0">
+                                <span class="text-xs font-medium text-slate-300">Hanya Aktif</span>
+                            </label>
+
+                            <div class="w-px h-6 bg-border-color mx-1"></div>
+
+                            <!-- Exam Selector -->
+                            <select id="exam-filter"
+                                class="flex-1 sm:flex-none bg-input-bg border border-border-color rounded-md px-3 py-1.5 text-xs text-white focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none transition-colors min-w-[150px]"
+                                onchange="loadStudentSessions()">
+                                <option value="ALL">Semua Ujian Aktif</option>
+                            </select>
+
+                            <!-- Refresh Btn -->
+                            <button onclick="loadStudentSessions()"
+                                class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                title="Refresh">
+                                <span class="material-symbols-outlined text-lg">refresh</span>
+                            </button>
+
+                            <div class="w-px h-6 bg-border-color mx-1"></div>
+
+                            <!-- Actions -->
+                            <button onclick="clearFinishedSessions()"
+                                class="px-3 py-1.5 text-xs font-medium bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 rounded-md transition-colors flex items-center gap-1.5"
+                                title="Hapus sesi selesai">
+                                <span class="material-symbols-outlined text-sm">cleaning_services</span>
+                                Selesai
+                            </button>
+
+                            <button onclick="clearAllSessions()"
+                                class="px-3 py-1.5 text-xs font-medium bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-md transition-colors flex items-center gap-1.5"
+                                title="Hapus SEMUA data">
+                                <span class="material-symbols-outlined text-sm">delete_forever</span>
+                                Semua
+                            </button>
+                        </div>
+                    </div>
+                    <div id="students-monitoring-container" class="p-0 max-h-[500px] overflow-y-auto">
+                        <div class="p-8 text-center text-muted-text">Memuat siswa...</div>
+                    </div>
+                </div>
+
+                <!-- Live Monitoring / Incident Log (Tab Content) -->
+                <div id="content-incidents"
+                    class="bg-card-bg border border-border-color rounded-xl overflow-hidden hidden animate-fade-in">
+                    <div class="p-6 border-b border-border-color flex justify-between items-center bg-red-500/5">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-red-500 animate-pulse">warning</span>
+                            Riwayat Pelanggaran
+                        </h3>
+                        <button onclick="loadLogs()"
+                            class="text-xs bg-input-bg hover:bg-border-color border border-border-color px-2 py-1 rounded text-white transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+                        </button>
+                    </div>
+                    <div id="logs-container" class="p-0 max-h-[500px] overflow-y-auto">
+                        <div class="p-8 text-center text-muted-text">Memuat log...</div>
+                    </div>
+                </div>
+
+                <!-- Exam List -->
+                <div class="bg-card-bg border border-border-color rounded-xl overflow-hidden">
+                    <div class="p-6 border-b border-border-color flex justify-between items-center bg-input-bg/50">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-400">dns</span>
+                            Daftar Ujian
+                        </h3>
+                        <button onclick="loadExams()"
+                            class="text-xs bg-input-bg hover:bg-border-color border border-border-color px-2 py-1 rounded text-white transition-colors">Refresh</button>
+                    </div>
+                    <div id="exams-container" class="p-0">
+                        <div class="p-8 text-center text-muted-text">Memuat ujian...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Student Details Modal -->
+    <div id="student-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeStudentModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl p-4">
+            <div
+                class="bg-card-bg border border-border-color rounded-2xl shadow-2xl p-6 relative max-h-[80vh] flex flex-col">
+                <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+
+                <div class="mb-6 border-b border-border-color pb-4">
+                    <h2 class="text-2xl font-bold text-white mb-1" id="modal-student-name">Nama Siswa</h2>
+                    <p class="text-sm text-slate-400 flex items-center gap-4">
+                        <span id="modal-student-class"
+                            class="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-xs border border-blue-500/20">Kelas</span>
+                        <span id="modal-student-absen"
+                            class="bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-xs border border-purple-500/20">Absen</span>
+                        <span id="modal-exam-code" class="font-mono text-slate-500">CODE</span>
+                    </p>
+                </div>
+
+                <div id="modal-logs-list" class="overflow-y-auto pr-2 space-y-2 services-scrollbar">
+                    <!-- Logs injection -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auth Check
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+            }
+        }
+        checkAuth();
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        // --- Logic ---
+
+        // Load Stats
+        async function loadStats() {
+            // Active Exams
+            const { data: exams } = await supabase.from('exams').select('id').eq('is_active', true);
+            document.getElementById('stat-exams').textContent = exams ? exams.length : 0;
+
+            // Students Online (active sessions)
+            const { count: onlineCount } = await supabase.from('exam_sessions').select('*', { count: 'exact', head: true }).eq('is_active', true);
+            document.getElementById('stat-online').textContent = onlineCount || 0;
+
+            // Total Violations
+            const { count: violations } = await supabase.from('cheat_logs').select('*', { count: 'exact', head: true });
+            document.getElementById('stat-violations').textContent = violations || 0;
+
+            // Unique Students
+            const { data: logs } = await supabase.from('cheat_logs').select('student_name');
+            const uniqueStudents = logs ? new Set(logs.map(l => l.student_name)).size : 0;
+            document.getElementById('stat-students').textContent = uniqueStudents;
+        }
+
+        // 1. Fetch Exams
+        async function loadExams() {
+            const { data, error } = await supabase
+                .from('exams')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            const container = document.getElementById('exams-container');
+            if (data && data.length > 0) {
+                let html = `
+                <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-xs uppercase text-muted-text border-b border-border-color bg-input-bg">
+                            <th class="px-6 py-3 font-semibold">Nama Ujian</th>
+                            <th class="px-6 py-3 font-semibold">Kode Akses</th>
+                            <th class="px-6 py-3 font-semibold">Durasi</th>
+                            <th class="px-6 py-3 font-semibold">Status</th>
+                            <th class="px-6 py-3 font-semibold text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-color">`;
+
+                data.forEach(exam => {
+                    const statusClass = exam.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/50 text-gray-400';
+                    const statusText = exam.is_active ? 'Aktif' : 'Nonaktif';
+                    const duration = exam.duration || 60;
+                    const targetClass = exam.target_class || 'ALL';
+                    const sessionType = exam.session_type === 'ODD' ? 'Ganjil' : (exam.session_type === 'EVEN' ? 'Genap' : 'Semua');
+
+                    html += `
+                        <tr class="hover:bg-input-bg/50 transition-colors">
+                            <td class="px-6 py-4 font-medium text-white">
+                                ${exam.exam_name}
+                                <div class="flex gap-1 mt-1">
+                                    <span class="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">${targetClass}</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded border border-purple-500/20">${sessionType}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-primary tracking-wider">${exam.access_code}</td>
+                            <td class="px-6 py-4 text-sm">${duration} menit</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 rounded-full text-xs font-bold ${statusClass}">${statusText}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button onclick="copyLink('${exam.access_code}')" class="text-xs bg-input-bg border border-border-color hover:bg-border-color text-white px-2 py-1 rounded transition-colors flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">content_copy</span> Salin
+                                    </button>
+                                    ${exam.is_active
+                            ? `<button onclick="toggleExamStatus('${exam.id}', false)" class="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm">stop_circle</span> Akhiri
+                                           </button>`
+                            : `<button onclick="toggleExamStatus('${exam.id}', true)" class="text-xs bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 text-green-400 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm">play_circle</span> Mulai
+                                           </button>`
+                        }
+                                    <button onclick="deleteExam('${exam.id}', '${exam.exam_name}', '${exam.access_code}')" class="text-xs bg-slate-700/50 border border-slate-600 hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-400 text-slate-400 px-2 py-1 rounded transition-colors flex items-center gap-1" title="Delete Exam">
+                                        <span class="material-symbols-outlined text-sm">delete</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="p-8 text-center text-muted-text">Belum ada ujian. Buat ujian pertama Anda!</div>';
+            }
+        }
+
+        function copyLink(code) {
+            navigator.clipboard.writeText(code);
+            showStatus('Kode Akses ' + code + ' berhasil disalin!');
+        }
+
+        async function toggleExamStatus(examId, isActive) {
+            if (!confirm(isActive ? "Aktifkan kembali ujian ini?" : "Akhiri sesi ujian ini? Siswa tidak akan bisa login lagi.")) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('exams')
+                .update({ is_active: isActive })
+                .eq('id', examId);
+
+            if (error) {
+                alert("Error: " + error.message);
+            } else {
+                showStatus(isActive ? "Ujian diaktifkan kembali." : "Sesi ujian diakhiri.");
+                loadExams();
+                loadStats();
+            }
+        }
+
+        async function deleteExam(examId, examName, accessCode) {
+            if (!confirm(`Yakin ingin MENGHAPUS ujian "${examName}"?\n\nPERINGATAN: Semua data pelanggaran (Cheat Logs) untuk sesi ini JUGAA AKAN DIHAPUS PERMANEN.`)) {
+                return;
+            }
+
+            // 1. Delete associated logs first
+            const { error: logError } = await supabase
+                .from('cheat_logs')
+                .delete()
+                .eq('exam_access_code', accessCode);
+
+            if (logError) {
+                console.error("Error deleting logs:", logError);
+                // We continue to delete exam even if logs fail? Or stop?
+                // Better stop to prevent partial state, or warn.
+                // But usually we want to force delete. Let's proceed but warn console.
+            }
+
+            // 2. Delete exam
+            const { error } = await supabase
+                .from('exams')
+                .delete()
+                .eq('id', examId);
+
+            if (error) {
+                alert("Gagal menghapus ujian: " + error.message);
+            } else {
+                showStatus("Ujian dan data pelanggaran berhasil dihapus.");
+                loadExams();
+                loadStats();
+                loadLogs(); // Refresh feed as well
+            }
+        }
+
+        // 2. Fetch Logs (SIMPLIFIED FEED)
+        let _allLogs = []; // Store logs locally for modal filtering
+
+        async function loadLogs() {
+            const { data, error } = await supabase
+                .from('cheat_logs')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(100);
+
+            if (data) {
+                _allLogs = data; // Cache for modal
+                renderFeed(data);
+            }
+        }
+
+        function renderFeed(logs) {
+            const container = document.getElementById('logs-container');
+
+            // Group by Student
+            const studentGroups = {};
+            logs.forEach(log => {
+                if (!studentGroups[log.student_name]) {
+                    studentGroups[log.student_name] = {
+                        name: log.student_name,
+                        count: 0,
+                        latest: log.timestamp,
+                        violation_types: new Set()
+                    };
+                }
+                studentGroups[log.student_name].count++;
+                studentGroups[log.student_name].violation_types.add(log.violation_type);
+                if (new Date(log.timestamp) > new Date(studentGroups[log.student_name].latest)) {
+                    studentGroups[log.student_name].latest = log.timestamp;
+                }
+            });
+
+            // Convert to array
+            const feedItems = Object.values(studentGroups).sort((a, b) => new Date(b.latest) - new Date(a.latest));
+
+            if (feedItems.length > 0) {
+                let html = '<div class="divide-y divide-border-color">';
+                feedItems.forEach(item => {
+                    const time = new Date(item.latest).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const types = Array.from(item.violation_types).join(', ');
+
+                    html += `
+                        <div onclick="openStudentModal('${item.name}')" class="px-6 py-4 flex items-center justify-between hover:bg-input-bg/50 transition-colors cursor-pointer group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0 group-hover:bg-red-500/20 transition-colors">
+                                    <span class="material-symbols-outlined text-red-500">warning</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white group-hover:text-primary transition-colors">${item.name}</h4>
+                                    <p class="text-xs text-red-400 mt-1">${item.count} Pelanggaran Terdeteksi</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <button onclick="event.stopPropagation(); deleteStudentLogs('${item.name}')" class="text-xs bg-slate-700/50 border border-slate-600 hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-400 text-slate-400 px-2 py-1 rounded transition-colors flex items-center gap-1 z-10" title="Delete Log">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                                <div class="text-right">
+                                    <span class="text-xs text-muted-text font-mono">${time}</span>
+                                    <div class="text-[10px] text-slate-500 mt-1">Klik untuk detail</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="p-8 text-center text-muted-text bg-green-500/5"><span class="material-symbols-outlined text-green-500 block text-2xl mb-2">check_circle</span>Tidak ada pelanggaran tercatat.</div>';
+            }
+        }
+
+        function switchTab(tab) {
+            const btnMonitoring = document.getElementById('tab-monitoring');
+            const btnIncidents = document.getElementById('tab-incidents');
+            const contentMonitoring = document.getElementById('content-monitoring');
+            const contentIncidents = document.getElementById('content-incidents');
+
+            if (tab === 'monitoring') {
+                btnMonitoring.className = 'pb-3 border-b-2 border-primary text-white font-bold transition-colors flex items-center gap-2';
+                btnIncidents.className = 'pb-3 border-b-2 border-transparent text-muted-text hover:text-white transition-colors flex items-center gap-2';
+                contentMonitoring.classList.remove('hidden');
+                contentIncidents.classList.add('hidden');
+            } else {
+                btnMonitoring.className = 'pb-3 border-b-2 border-transparent text-muted-text hover:text-white transition-colors flex items-center gap-2';
+                btnIncidents.className = 'pb-3 border-b-2 border-primary text-white font-bold transition-colors flex items-center gap-2';
+                contentMonitoring.classList.add('hidden');
+                contentIncidents.classList.remove('hidden');
+            }
+        }
+
+        async function deleteStudentLogs(studentName) {
+            if (!confirm(`Hapus semua riwayat pelanggaran untuk siswa "${studentName}"?`)) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('cheat_logs')
+                .delete()
+                .eq('student_name', studentName);
+
+            if (error) {
+                alert("Gagal menghapus log: " + error.message);
+            } else {
+                showStatus(`Log untuk ${studentName} berhasil dihapus.`);
+                loadStats();
+                loadLogs();
+            }
+        }
+
+        // Modal Logic
+        function openStudentModal(studentName) {
+            const studentLogs = _allLogs.filter(l => l.student_name === studentName);
+            if (studentLogs.length === 0) return;
+
+            // Get metadata from latest log (assuming consistent)
+            const latest = studentLogs[0];
+
+            document.getElementById('modal-student-name').textContent = studentName;
+            document.getElementById('modal-student-class').textContent = latest.student_class || 'Kelas Tidak Diketahui';
+            document.getElementById('modal-student-absen').textContent = 'Absen: ' + (latest.student_absen || '-');
+            document.getElementById('modal-exam-code').textContent = latest.exam_access_code;
+
+            const list = document.getElementById('modal-logs-list');
+            let html = '';
+            studentLogs.forEach(log => {
+                const time = new Date(log.timestamp).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                let icon = log.violation_type === 'tab_switch' ? 'visibility_off' : 'aspect_ratio';
+
+                html += `
+                    <div class="flex items-start gap-3 p-3 rounded bg-white/5 border border-white/5">
+                        <span class="material-symbols-outlined text-sm text-red-400 mt-0.5">${icon}</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-white font-medium">${log.violation_type}</p>
+                            <p class="text-xs text-slate-400">${log.details || '-'}</p>
+                        </div>
+                        <span class="text-xs font-mono text-slate-500">${time}</span>
+                    </div>
+                 `;
+            });
+            list.innerHTML = html;
+
+            document.getElementById('student-modal').classList.remove('hidden');
+        }
+
+        function closeStudentModal() {
+            document.getElementById('student-modal').classList.add('hidden');
+        }
+
+        // 3. Create Exam
+        document.getElementById('create-exam-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const button = e.target.querySelector('button');
+            const originalText = button.innerHTML; // Fix: save original HTML content
+            button.disabled = true;
+            button.innerHTML = '<span class="animate-spin material-symbols-outlined">refresh</span> Deploying...';
+
+            const name = document.getElementById('exam_name').value;
+            const code = document.getElementById('access_code').value.toUpperCase().trim();
+            const url = document.getElementById('form_url').value;
+            const duration = document.getElementById('duration').value || 60;
+            const targetClass = document.getElementById('target_class').value;
+            const sessionType = document.getElementById('session_type').value;
+
+            const { error } = await supabase
+                .from('exams')
+                .insert({
+                    exam_name: name,
+                    access_code: code,
+                    google_form_url: url,
+                    strict_mode: true,
+                    duration: parseInt(duration),
+                    target_class: targetClass,
+                    session_type: sessionType
+                });
+
+            if (error) {
+                alert("Error: " + error.message);
+            } else {
+                showStatus(`Exam "${name}" deployed successfully!`);
+                e.target.reset();
+                loadExams();
+                loadStats();
+            }
+
+            button.disabled = false;
+            button.innerHTML = originalText; // Reset Text
+        });
+
+        function showStatus(msg) {
+            const el = document.getElementById('status-msg');
+            document.getElementById('status-text').textContent = msg;
+            el.classList.remove('hidden');
+            setTimeout(() => { el.classList.add('hidden'); }, 3000);
+        }
+
+        // Realtime Listener for Cheat Logs
+        supabase
+            .channel('public:cheat_logs')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cheat_logs' }, payload => {
+                loadLogs();
+                loadStats();
+                // Optional: Play notification sound
+            })
+            .subscribe();
+
+        // Realtime Listener for Student Sessions
+        supabase
+            .channel('public:exam_sessions')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions' }, payload => {
+                loadStudentSessions();
+                loadStats();
+            })
+            .subscribe();
+
+        // Load Exam Filter Options
+        async function loadExamFilter() {
+            const { data: exams } = await supabase
+                .from('exams')
+                .select('access_code, exam_name')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+
+            const select = document.getElementById('exam-filter');
+            // Clear existing options except first
+            select.innerHTML = '<option value="ALL">All Active Exams</option>';
+
+            if (exams) {
+                exams.forEach(exam => {
+                    const option = document.createElement('option');
+                    option.value = exam.access_code;
+                    option.textContent = exam.exam_name;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // Load Student Sessions for Monitoring
+        async function loadStudentSessions() {
+            const filterValue = document.getElementById('exam-filter').value;
+            const activeOnly = document.getElementById('active-only-filter').checked;
+
+            let query = supabase
+                .from('exam_sessions')
+                .select('*')
+                .order('joined_at', { ascending: false });
+
+            if (filterValue !== 'ALL') {
+                query = query.eq('exam_access_code', filterValue);
+            }
+
+            // Filter by active status if checkbox is checked
+            if (activeOnly) {
+                query = query.eq('is_active', true);
+            }
+
+            const { data: sessions, error } = await query;
+
+            const container = document.getElementById('students-monitoring-container');
+            const badge = document.getElementById('online-badge');
+
+            if (error) {
+                console.error('Error loading sessions:', error);
+                container.innerHTML = '<div class="p-8 text-center text-red-400">Gagal memuat data siswa.</div>';
+                return;
+            }
+
+            // Count active students
+            const activeCount = sessions ? sessions.filter(s => s.is_active).length : 0;
+            badge.textContent = `${activeCount} online`;
+
+            if (sessions && sessions.length > 0) {
+                let html = `
+                <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[10px] sm:text-xs uppercase text-muted-text border-b border-border-color bg-input-bg">
+                            <th class="px-3 sm:px-4 py-2 sm:py-3 font-semibold">Siswa</th>
+                            <th class="px-3 sm:px-4 py-2 sm:py-3 font-semibold hidden sm:table-cell">Kelas</th>
+                            <th class="px-3 sm:px-4 py-2 sm:py-3 font-semibold hidden sm:table-cell">Absen</th>
+                            <th class="px-3 sm:px-4 py-2 sm:py-3 font-semibold">Masuk</th>
+                            <th class="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-color">`;
+
+                sessions.forEach(session => {
+                    const joinedTime = new Date(session.joined_at).toLocaleString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    const statusClass = session.is_active
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-slate-700/50 text-slate-400 border-slate-600';
+                    const statusIcon = session.is_active ? 'radio_button_checked' : 'check_circle';
+                    const statusText = session.is_active ? 'Aktif' : 'Selesai';
+
+                    html += `
+                        <tr class="hover:bg-input-bg/50 transition-colors ${session.is_active ? '' : 'opacity-60'}">
+                            <td class="px-3 sm:px-4 py-2 sm:py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ${session.is_active ? 'bg-green-500/20 border-green-500/30' : 'bg-slate-700 border-slate-600'} border flex items-center justify-center shrink-0">
+                                        <span class="material-symbols-outlined text-xs sm:text-sm ${session.is_active ? 'text-green-400' : 'text-slate-400'}">person</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-white text-xs sm:text-sm truncate">${session.student_name}</p>
+                                        <p class="text-[10px] text-slate-500 sm:hidden">${session.student_class} • ${session.student_absen}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-3 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
+                                <span class="text-xs px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">${session.student_class}</span>
+                            </td>
+                            <td class="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm hidden sm:table-cell">${session.student_absen}</td>
+                            <td class="px-3 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-xs font-mono text-muted-text">${joinedTime}</td>
+                            <td class="px-3 sm:px-4 py-2 sm:py-3 text-center">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${statusClass} border">
+                                    <span class="material-symbols-outlined text-xs">${statusIcon}</span>
+                                    <span class="hidden sm:inline">${statusText}</span>
+                                </span>
+                            </td>
+                        </tr>`;
+                });
+
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="p-8 text-center text-muted-text"><span class="material-symbols-outlined text-2xl mb-2 block opacity-50">groups</span>Belum ada siswa yang mengikuti ujian.</div>';
+            }
+        }
+
+        // Clear finished sessions from database
+        async function clearFinishedSessions() {
+            if (!confirm('Hapus semua sesi siswa yang sudah selesai?\\n\\nData yang dihapus tidak dapat dikembalikan.')) {
+                return;
+            }
+
+            const { error, count } = await supabase
+                .from('exam_sessions')
+                .delete()
+                .eq('is_active', false);
+
+            if (error) {
+                alert('Gagal menghapus sesi: ' + error.message);
+            } else {
+                showStatus('Sesi yang sudah selesai berhasil dihapus.');
+                loadStudentSessions();
+                loadStats();
+            }
+        }
+
+        // Clear ALL sessions from database
+        async function clearAllSessions() {
+            if (!confirm('⚠️ HAPUS SEMUA SESI?\\n\\nIni akan menghapus SEMUA data siswa termasuk yang sedang aktif!\\n\\nLanjutkan?')) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('exam_sessions')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000');
+
+            if (error) {
+                alert('Gagal menghapus sesi: ' + error.message);
+            } else {
+                showStatus('Semua sesi berhasil dihapus.');
+                loadStudentSessions();
+                loadStats();
+            }
+        }
+
+        // Init
+        loadExams();
+        loadLogs();
+        loadStats();
+        loadExamFilter();
+        loadStudentSessions();
+    </script>
+</body>
+
+</html>
+```
