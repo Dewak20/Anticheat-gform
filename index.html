@@ -429,7 +429,8 @@
                 };
                 sessionStorage.setItem('exam_session', JSON.stringify(sessionData));
 
-                // 4. Redirect
+                // 4. Redirect - Turn off submission flag so beforeunload doesn't trigger
+                isSubmitting = false;
                 window.location.href = 'exam.html';
 
             } catch (err) {

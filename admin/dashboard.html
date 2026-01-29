@@ -298,6 +298,11 @@
                             class="text-xs bg-input-bg hover:bg-border-color border border-border-color px-2 py-1 rounded text-white transition-colors flex items-center gap-1">
                             <span class="material-symbols-outlined text-sm">refresh</span> Refresh
                         </button>
+                        <div class="h-4 w-px bg-border-color mx-2"></div>
+                        <button onclick="deleteAllLogs()"
+                            class="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">delete_forever</span> Hapus Semua
+                        </button>
                     </div>
                     <div id="logs-container" class="p-0 max-h-[500px] overflow-y-auto">
                         <div class="p-8 text-center text-muted-text">Memuat log...</div>
@@ -627,6 +632,25 @@
                 alert("Gagal menghapus log: " + error.message);
             } else {
                 showStatus(`Log untuk ${studentName} berhasil dihapus.`);
+                loadStats();
+                loadLogs();
+            }
+        }
+
+        async function deleteAllLogs() {
+            if (!confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA riwayat pelanggaran dari database? Tindakan ini tidak dapat dibatalkan.")) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from('cheat_logs')
+                .delete()
+                .neq('id', 0); // Standard way to delete all rows in Supabase if RLS allows or service role used
+
+            if (error) {
+                alert("Gagal menghapus log: " + error.message);
+            } else {
+                showStatus("Semua riwayat pelanggaran berhasil dihapus.");
                 loadStats();
                 loadLogs();
             }

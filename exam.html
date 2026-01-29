@@ -130,19 +130,21 @@
     <div class="exam-container-wrapper bg-background-dark">
         <!-- MOBILE-FRIENDLY HEADER -->
         <header
-            class="mobile-compact-header shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-background-dark border-b border-[#27383a] z-50 shadow-md">
+            class="mobile-compact-header shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-background-dark border-b border-[#27383a] z-50 shadow-md sticky top-0 flex-nowrap h-[60px] sm:h-auto">
 
             <!-- Left: Student Info (Compact on mobile) -->
-            <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
                 <div
                     class="size-8 sm:size-10 rounded-full bg-cover bg-center border border-[#27383a] shrink-0 bg-primary/20 flex items-center justify-center">
                     <span class="material-symbols-outlined text-primary text-lg sm:text-xl">person</span>
                 </div>
+                <!-- Overflow hidden added to prevent pushing buttons -->
                 <div class="flex flex-col truncate min-w-0">
                     <span id="student-name-display"
                         class="text-xs sm:text-sm font-semibold text-white leading-tight truncate">Memuat...</span>
+                    <!-- HIDE details on mobile to save space for Timer/Button -->
                     <span id="student-details-display"
-                        class="text-[10px] sm:text-xs text-slate-400 font-medium leading-tight mobile-small-text">...</span>
+                        class="hidden md:block mobile-hide text-[10px] sm:text-xs text-slate-400 font-medium leading-tight mobile-small-text">...</span>
                 </div>
             </div>
 
@@ -167,9 +169,10 @@
                         class="mobile-timer text-primary text-base sm:text-lg font-bold font-mono tracking-tight leading-none tabular-nums">
                         00:00</p>
                 </div>
-                <button onclick="finishEarly()"
-                    class="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-lg transition-colors shadow-lg">
-                    <span class="material-symbols-outlined text-base">check_circle</span>
+                <button id="btn-finish-exam" type="button" onclick="finishEarly()"
+                    class="flex items-center justify-center gap-1.5 px-4 py-3 min-h-[44px] min-w-[100px] bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors shadow-lg cursor-pointer touch-manipulation pointer-events-auto select-none"
+                    style="z-index: 9000; position: relative; -webkit-tap-highlight-color: rgba(0,0,0,0.1);">
+                    <span class="material-symbols-outlined text-lg">check_circle</span>
                     <span>Selesai</span>
                 </button>
             </div>
@@ -195,12 +198,12 @@
                 <h3 id="confirm-title" class="text-xl font-bold text-white mb-2">Konfirmasi</h3>
                 <p id="confirm-message" class="text-slate-400 text-sm mb-6">Apakah Anda yakin?</p>
                 <div class="flex gap-3">
-                    <button onclick="closeConfirmModal()"
-                        class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition-colors">
+                    <button id="confirm-cancel-btn" type="button" onclick="closeConfirmModal()"
+                        class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white font-medium rounded-xl transition-colors touch-manipulation">
                         Batal
                     </button>
-                    <button id="confirm-yes-btn" onclick="confirmAction()"
-                        class="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <button id="confirm-yes-btn" type="button" onclick="confirmAction()"
+                        class="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 touch-manipulation">
                         Ya, Selesai
                     </button>
                 </div>
@@ -272,6 +275,17 @@
 
             // 5. Initialize Timer
             initTimer(session.examDuration);
+
+            // 6. Log when button is found (onclick is handled inline in HTML)
+            const finishBtn = document.getElementById('btn-finish-exam');
+            if (finishBtn) {
+                console.log('Finish button found - onclick handler attached via HTML');
+            } else {
+                console.error('Finish button NOT found!');
+            }
+
+            // 7. Modal buttons - also handled inline in HTML
+            console.log('Modal buttons initialized');
         });
 
         function initTimer(durationMinutes) {
@@ -320,11 +334,14 @@
             timerElement.classList.remove('text-orange-500');
             timerElement.classList.add('text-red-600', 'animate-pulse');
 
-            const existingFooter = document.querySelector('.fixed.bottom-0');
+            // Remove existing footer if any
+            const existingFooter = document.getElementById('exam-time-up-bar');
             if (existingFooter) existingFooter.remove();
 
             const bottomBar = document.createElement('div');
-            bottomBar.className = "fixed bottom-0 left-0 w-full bg-red-900/95 backdrop-blur-md border-t border-red-500 p-4 z-50 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_-5px_20px_rgba(220,38,38,0.5)]";
+            bottomBar.id = 'exam-time-up-bar';
+            // CHANGED: Removed 'fixed bottom-0 left-0', added 'shrink-0' to participate in flex layout
+            bottomBar.className = "shrink-0 w-full bg-red-900/95 backdrop-blur-md border-t border-red-500 p-4 z-50 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_-5px_20px_rgba(220,38,38,0.5)]";
 
             bottomBar.innerHTML = `
                 <div class="flex items-center gap-4 text-white">
@@ -342,7 +359,14 @@
                 </button>
             `;
 
-            document.body.appendChild(bottomBar);
+            // Append to wrapper so it pushes the iframe up (flex layout)
+            const wrapper = document.querySelector('.exam-container-wrapper');
+            if (wrapper) {
+                wrapper.appendChild(bottomBar);
+            } else {
+                // Fallback
+                document.body.appendChild(bottomBar);
+            }
         }
 
         // Custom confirm modal functions
@@ -359,14 +383,17 @@
         }
 
         function confirmAction() {
+            // BUGFIX: Save callback BEFORE closing modal (which nullifies it)
+            const callback = confirmCallback;
             closeConfirmModal();
-            if (confirmCallback) {
-                confirmCallback();
+            if (callback) {
+                callback();
             }
         }
 
         // Early finish - allows students to exit safely
         function finishEarly() {
+            console.log("finishEarly() called - button was clicked");
             if (isFinishing) return;
 
             showConfirmModal(
@@ -376,13 +403,13 @@
             );
         }
 
-        // Actual finish logic (non-blocking)
+        // Actual finish logic - WAIT for DB update before redirect
         async function doFinish() {
             if (isFinishing) return;
             isFinishing = true;
 
             // Update button to show loading
-            const finishBtn = document.querySelector('button[onclick="finishEarly()"]');
+            const finishBtn = document.getElementById('btn-finish-exam');
             const timeUpBtn = document.getElementById('time-up-finish-btn');
 
             const showLoading = (btn) => {
@@ -406,30 +433,44 @@
                 window.Proctor.initialized = false;
             }
 
-            // Update session status in database (fire-and-forget)
+            // Update session status in database - MUST WAIT before redirect
             try {
                 const sessionRaw = sessionStorage.getItem('exam_session');
                 if (sessionRaw) {
                     const session = JSON.parse(sessionRaw);
+                    console.log('Session data:', session);
+
                     if (session.sessionId) {
-                        // Don't await - fire and forget
-                        supabase
+                        console.log('Updating session ID:', session.sessionId);
+                        const { data, error } = await supabase
                             .from('exam_sessions')
-                            .update({ is_active: false, finished_at: new Date().toISOString() })
+                            .update({
+                                is_active: false,
+                                finished_at: new Date().toISOString()
+                            })
                             .eq('id', session.sessionId)
-                            .then(() => console.log('Session updated'))
-                            .catch(e => console.warn('Session update failed:', e));
+                            .select();
+
+                        if (error) {
+                            console.error('Session update failed:', error);
+                        } else {
+                            console.log('Session updated successfully:', data);
+                        }
+                    } else {
+                        console.warn('No sessionId found in exam_session');
                     }
+                } else {
+                    console.warn('No exam_session found in sessionStorage');
                 }
             } catch (e) {
-                console.warn('Error updating session:', e);
+                console.error('Error updating session:', e);
             }
 
-            // Clear session immediately
+            // Clear session AFTER DB update
             localStorage.removeItem('exam_end_time');
             sessionStorage.removeItem('exam_session');
 
-            // Redirect immediately - don't wait for DB
+            // Redirect AFTER DB update is complete
             window.location.href = 'index.html';
         }
 

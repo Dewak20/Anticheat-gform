@@ -5,6 +5,8 @@ const Proctor = {
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
     initialized: false,
     isLocked: false, // Prevent stacking penalties
+    lastViolationTime: {}, // Track last violation per type for debouncing
+    lastResizeLog: 0, // Throttle resize logging
 
     init: function () {
         if (this.initialized) return;
@@ -34,10 +36,15 @@ const Proctor = {
 
         // BLUR REMOVED - causes too many false positives (clicking address bar, DevTools, etc.)
 
-        // 2. Resize detection - Log only, no penalty (info for teacher)
+        // 2. Resize detection - THROTTLED to prevent spam (5 second cooldown)
         window.addEventListener('resize', () => {
             if (!self.isMobile) {
-                self.logViolation("resize", "Jendela diubah ukurannya: " + window.innerWidth + "x" + window.innerHeight);
+                const now = Date.now();
+                // Only log if 5 seconds have passed since last resize log
+                if (now - self.lastResizeLog > 5000) {
+                    self.lastResizeLog = now;
+                    self.logViolation("resize", "Jendela diubah ukurannya: " + window.innerWidth + "x" + window.innerHeight);
+                }
                 // No penalty for resize, just log
             }
         });
@@ -54,6 +61,14 @@ const Proctor = {
             console.error("ProctorContext missing! Cannot log violation.");
             return;
         }
+
+        // DEBOUNCE: Prevent duplicate violations of same type within 2 seconds
+        const now = Date.now();
+        if (this.lastViolationTime[type] && (now - this.lastViolationTime[type] < 2000)) {
+            console.log("Violation debounced (too soon):", type);
+            return;
+        }
+        this.lastViolationTime[type] = now;
 
         try {
             const { error } = await supabase
